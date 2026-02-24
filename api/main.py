@@ -1,6 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
+from pathlib import Path
 from api.routers import kpi, cohorts, demand
+
+BASE_DIR = Path(__file__).parent.parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 app = FastAPI(
     title="E-commerce Analytics API",
@@ -21,5 +26,5 @@ app.include_router(demand.router)
 
 
 @app.get("/")
-def root():
-    return {"status": "ok", "docs": "/docs"}
+def dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-commerce Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    header h1 { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    header span { font-size: 0.75rem; color: #6b7280; }
+
+    nav {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 0 1.5rem;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    nav::-webkit-scrollbar { display: none; }
+
+    nav button {
+      background: none;
+      border: none;
+      color: #6b7280;
+      padding: 0.875rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+    }
+
+    nav button:hover { color: #e2e8f0; }
+    nav button.active { color: #6366f1; border-bottom-color: #6366f1; }
+
+    main { padding: 1.25rem; max-width: 1400px; margin: 0 auto; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .kpi-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+    }
+
+    .kpi-card .label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+    .kpi-card .value { font-size: 1.4rem; font-weight: 700; color: #fff; }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (min-width: 900px) {
+      .charts-grid.two-col { grid-template-columns: 1fr 1fr; }
+    }
+
+    .chart-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .chart-card h3 {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #a0aec0;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .chart-wrap { position: relative; height: 240px; }
+
+    @media (min-width: 640px) {
+      .chart-wrap { height: 280px; }
+    }
+
+    .table-wrap { overflow-x: auto; margin-top: 0.5rem; -webkit-overflow-scrolling: touch; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 400px; }
+    thead th { text-align: left; padding: 0.5rem 0.75rem; color: #6b7280; font-weight: 500; border-bottom: 1px solid #2d3148; font-size: 0.7rem; text-transform: uppercase; white-space: nowrap; }
+    tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #1e2130; color: #e2e8f0; }
+    tbody tr:hover { background: #1e2130; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .loading { color: #4b5563; font-size: 0.875rem; padding: 2rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>E-commerce Analytics</h1>
+  <span>Transactional &amp; Behavioral Data Layer</span>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('revenue', this)">Revenue KPIs</button>
+  <button onclick="switchTab('cohorts', this)">Cohort Analysis</button>
+  <button onclick="switchTab('demand', this)">Demand Indicators</button>
+</nav>
+
+<main>
+
+  <div id="tab-revenue" class="tab-content active">
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="label">Total Revenue</div><div class="value" id="kpi-revenue">—</div></div>
+      <div class="kpi-card"><div class="label">Total Orders</div><div class="value" id="kpi-orders">—</div></div>
+      <div class="kpi-card"><div class="label">Avg Order Value</div><div class="value" id="kpi-aov">—</div></div>
+      <div class="kpi-card"><div class="label">Completion Rate</div><div class="value" id="kpi-completion">—</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Monthly Revenue</h3>
+        <div class="chart-wrap"><canvas id="chart-monthly-revenue"></canvas></div>
+      </div>
+    </div>
+    <div class="charts-grid two-col">
+      <div class="chart-card">
+        <h3>Monthly Orders</h3>
+        <div class="chart-wrap"><canvas id="chart-monthly-orders"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Conversion Rate by Source</h3>
+        <div class="chart-wrap"><canvas id="chart-conversion"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-cohorts" class="tab-content">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Repeat Purchase Rate by Cohort Month</h3>
+        <div class="chart-wrap"><canvas id="chart-repeat"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Cohort Retention Table</h3>
+      <div class="table-wrap">
+        <table id="table-retention">
+          <thead><tr><th>Cohort Month</th><th>Month #</th><th>Cohort Size</th><th>Retention (%)</th></tr></thead>
+          <tbody><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-demand" class="tab-content">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Monthly Revenue Growth Rate (%)</h3>
+        <div class="chart-wrap"><canvas id="chart-growth"></canvas></div>
+      </div>
+    </div>
+    <div class="charts-grid two-col">
+      <div class="chart-card">
+        <h3>Top 20 Products by Units Sold</h3>
+        <div class="table-wrap">
+          <table id="table-top-products">
+            <thead><tr><th>Product</th><th>Category</th><th>Units</th><th>Revenue</th></tr></thead>
+            <tbody><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Units Sold by Category</h3>
+        <div class="chart-wrap"><canvas id="chart-category"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const API = '';
+const COLORS = ['#6366f1','#22d3ee','#4ade80','#f59e0b','#f43f5e','#a78bfa','#34d399','#fb923c'];
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function fmt(n) { return new Intl.NumberFormat('en-US').format(Math.round(n)); }
+function fmtEur(n) { return '€' + fmt(n); }
+
+function makeChart(id, type, labels, datasets, extra = {}) {
+  const ctx = document.getElementById(id).getContext('2d');
+  return new Chart(ctx, {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#9ca3af', font: { size: 10 }, boxWidth: 12 } } },
+      scales: type !== 'pie' && type !== 'doughnut' ? {
+        x: { ticks: { color: '#6b7280', maxRotation: 45, font: { size: 9 } }, grid: { color: '#1e2130' } },
+        y: { ticks: { color: '#6b7280', font: { size: 9 } }, grid: { color: '#1e2130' } },
+        ...extra.scales
+      } : {},
+      ...extra
+    }
+  });
+}
+
+async function loadRevenue() {
+  const [summary, monthly, conversion] = await Promise.all([
+    fetch(API + '/kpi/summary').then(r => r.json()),
+    fetch(API + '/kpi/revenue').then(r => r.json()),
+    fetch(API + '/kpi/conversion').then(r => r.json()),
+  ]);
+
+  document.getElementById('kpi-revenue').textContent = fmtEur(summary.total_revenue);
+  document.getElementById('kpi-orders').textContent = fmt(summary.total_orders);
+  document.getElementById('kpi-aov').textContent = fmtEur(summary.avg_order_value);
+  document.getElementById('kpi-completion').textContent = summary.completion_rate_pct + '%';
+
+  makeChart('chart-monthly-revenue', 'bar',
+    monthly.map(r => r.month),
+    [{ label: 'Revenue (€)', data: monthly.map(r => r.total_revenue), backgroundColor: '#6366f1', borderRadius: 4 }]
+  );
+  makeChart('chart-monthly-orders', 'bar',
+    monthly.map(r => r.month),
+    [{ label: 'Orders', data: monthly.map(r => r.order_count), backgroundColor: '#22d3ee', borderRadius: 4 }]
+  );
+  makeChart('chart-conversion', 'bar',
+    conversion.map(r => r.source),
+    [{ label: 'Conversion Rate (%)', data: conversion.map(r => r.conversion_rate_pct), backgroundColor: COLORS, borderRadius: 4 }]
+  );
+}
+
+async function loadCohorts() {
+  const [retention, repeat] = await Promise.all([
+    fetch(API + '/cohorts/retention').then(r => r.json()),
+    fetch(API + '/cohorts/repeat-purchase').then(r => r.json()),
+  ]);
+
+  document.querySelector('#table-retention tbody').innerHTML = retention.map(r => `
+    <tr><td>${r.cohort_month}</td><td>${r.period_number}</td><td>${fmt(r.cohort_size)}</td><td>${r.retention_rate_pct}%</td></tr>
+  `).join('');
+
+  makeChart('chart-repeat', 'line',
+    repeat.map(r => r.cohort_month),
+    [{ label: 'Repeat Purchase Rate (%)', data: repeat.map(r => r.repeat_rate_pct), borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.1)', fill: true, tension: 0.4, pointRadius: 3 }]
+  );
+}
+
+async function loadDemand() {
+  const [growth, topProducts, byCategory] = await Promise.all([
+    fetch(API + '/demand/growth').then(r => r.json()),
+    fetch(API + '/demand/top-products').then(r => r.json()),
+    fetch(API + '/demand/by-category').then(r => r.json()),
+  ]);
+
+  makeChart('chart-growth', 'bar',
+    growth.map(r => r.month),
+    [{ label: 'Growth Rate (%)', data: growth.map(r => r.growth_rate_pct), backgroundColor: growth.map(r => r.growth_rate_pct >= 0 ? '#4ade80' : '#f43f5e'), borderRadius: 4 }]
+  );
+
+  document.querySelector('#table-top-products tbody').innerHTML = topProducts.map(r => `
+    <tr><td>${r.product_name}</td><td>${r.category_name}</td><td>${fmt(r.total_units)}</td><td>${fmtEur(r.total_revenue)}</td></tr>
+  `).join('');
+
+  const months = [...new Set(byCategory.map(r => r.month))].sort();
+  const cats = [...new Set(byCategory.map(r => r.category_name))];
+  makeChart('chart-category', 'bar', months,
+    cats.map((cat, i) => ({
+      label: cat,
+      data: months.map(m => { const row = byCategory.find(r => r.month === m && r.category_name === cat); return row ? row.units_sold : 0; }),
+      backgroundColor: COLORS[i % COLORS.length],
+      borderRadius: 2,
+    })),
+    { scales: { x: { stacked: true }, y: { stacked: true } } }
+  );
+}
+
+loadRevenue();
+document.querySelector('[onclick*="cohorts"]').addEventListener('click', loadCohorts, { once: true });
+document.querySelector('[onclick*="demand"]').addEventListener('click', loadDemand, { once: true });
+</script>
+
+</body>
+</html>
