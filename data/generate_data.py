@@ -11,7 +11,6 @@ np.random.seed(42)
 OUTPUT_DIR = Path(__file__).parent / "raw"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# --- Categories ---
 CATEGORIES = [
     "Electronics", "Clothing", "Home & Kitchen", "Sports & Outdoors",
     "Beauty & Health", "Books", "Toys & Games", "Automotive"
@@ -22,7 +21,6 @@ categories = pd.DataFrame({
     "name": CATEGORIES
 })
 
-# --- Products ---
 products_data = []
 for i in range(1, 201):
     cat_id = random.randint(1, len(CATEGORIES))
@@ -35,21 +33,18 @@ for i in range(1, 201):
 
 products = pd.DataFrame(products_data)
 
-# --- Users ---
-users_data = []
 countries = ["Croatia", "Germany", "Austria", "Slovenia", "France", "Netherlands"]
+users_data = []
 for i in range(1, 1001):
-    country = random.choice(countries)
     users_data.append({
         "id": i,
         "created_at": fake.date_time_between(start_date="-2y", end_date="now"),
-        "country": country,
+        "country": random.choice(countries),
         "city": fake.city()
     })
 
 users = pd.DataFrame(users_data)
 
-# --- Orders ---
 orders_data = []
 for i in range(1, 5001):
     orders_data.append({
@@ -60,12 +55,11 @@ for i in range(1, 5001):
             ["completed", "cancelled", "pending"],
             weights=[0.75, 0.15, 0.10]
         )[0],
-        "total_amount": 0.0  # calculated after order_items
+        "total_amount": 0.0
     })
 
 orders = pd.DataFrame(orders_data)
 
-# --- Order Items ---
 order_items_data = []
 item_id = 1
 for order_id in orders["id"]:
@@ -88,7 +82,6 @@ for order_id in orders["id"]:
 
 order_items = pd.DataFrame(order_items_data)
 
-# --- Sessions ---
 sessions_data = []
 for i in range(1, 8001):
     sessions_data.append({
@@ -107,7 +100,6 @@ for i in range(1, 8001):
 
 sessions = pd.DataFrame(sessions_data)
 
-# --- Export to CSV ---
 categories.to_csv(OUTPUT_DIR / "categories.csv", index=False)
 products.to_csv(OUTPUT_DIR / "products.csv", index=False)
 users.to_csv(OUTPUT_DIR / "users.csv", index=False)
