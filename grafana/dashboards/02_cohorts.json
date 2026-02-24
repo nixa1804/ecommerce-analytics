@@ -1,0 +1,69 @@
+{
+  "title": "Cohort Analysis",
+  "uid": "cohort-analysis",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["ecommerce", "cohorts"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Cohort Retention Rate (%)",
+      "type": "table",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource" },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "http://fastapi:8000/cohorts/retention",
+          "root_selector": "",
+          "columns": [
+            { "selector": "cohort_month", "text": "Cohort Month", "type": "string" },
+            { "selector": "period_number", "text": "Month #", "type": "number" },
+            { "selector": "cohort_size", "text": "Cohort Size", "type": "number" },
+            { "selector": "retention_rate_pct", "text": "Retention (%)", "type": "number" }
+          ],
+          "url_options": { "method": "GET" }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Retention (%)" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": { "steps": [{ "color": "red", "value": 0 }, { "color": "yellow", "value": 10 }, { "color": "green", "value": 25 }] } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Repeat Purchase Rate by Cohort",
+      "type": "barchart",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 12 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource" },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "http://fastapi:8000/cohorts/repeat-purchase",
+          "root_selector": "",
+          "columns": [
+            { "selector": "cohort_month", "text": "Cohort Month", "type": "string" },
+            { "selector": "repeat_rate_pct", "text": "Repeat Rate (%)", "type": "number" }
+          ],
+          "url_options": { "method": "GET" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+      "options": { "xField": "Cohort Month" }
+    }
+  ]
+}
