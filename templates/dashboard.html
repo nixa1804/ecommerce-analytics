@@ -143,6 +143,9 @@
 
     .loading { color: #4b5563; font-size: 0.875rem; padding: 2rem; text-align: center; }
 
+    #table-retention { min-width: 500px; font-size: 0.72rem; }
+    #table-retention th, #table-retention td { padding: 0.3rem 0.5rem; }
+
     @media (max-width: 640px) {
       main { padding: 1rem 0.75rem; }
       .kpi-card .value { font-size: 1.2rem; }
@@ -202,7 +205,7 @@
       <h3>Cohort Retention Table</h3>
       <div class="table-wrap">
         <table id="table-retention">
-          <thead><tr><th>Cohort Month</th><th>Month #</th><th>Cohort Size</th><th>Retention (%)</th></tr></thead>
+          <thead><tr></tr></thead>
           <tbody><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
         </table>
       </div>
@@ -238,6 +241,7 @@
 <script>
 const API = '';
 const COLORS = ['#6366f1','#22d3ee','#4ade80','#f59e0b','#f43f5e','#a78bfa','#34d399','#fb923c'];
+const CAT_COLORS = ['#818cf8','#38bdf8','#34d399','#fb923c','#f472b6','#a78bfa','#22d3ee','#86efac'];
 
 function switchTab(name, btn) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -290,7 +294,8 @@ async function loadRevenue() {
   );
   makeChart('chart-conversion', 'bar',
     conversion.map(r => r.source),
-    [{ label: 'Conversion Rate (%)', data: conversion.map(r => r.conversion_rate_pct), backgroundColor: COLORS, borderRadius: 4 }]
+    [{ label: 'Conversion Rate (%)', data: conversion.map(r => r.conversion_rate_pct), backgroundColor: COLORS, borderRadius: 4 }],
+    { plugins: { legend: { display: false } } }
   );
 }
 
@@ -300,9 +305,27 @@ async function loadCohorts() {
     fetch(API + '/cohorts/repeat-purchase').then(r => r.json()),
   ]);
 
-  document.querySelector('#table-retention tbody').innerHTML = retention.map(r => `
-    <tr><td>${r.cohort_month}</td><td>${r.period_number}</td><td>${fmt(r.cohort_size)}</td><td>${r.retention_rate_pct}%</td></tr>
-  `).join('');
+  const cohorts = [...new Set(retention.map(r => r.cohort_month))].sort();
+  const periods = [...new Set(retention.map(r => r.period_number))].sort((a, b) => a - b).slice(0, 13);
+  const map = {};
+  retention.forEach(r => {
+    if (!map[r.cohort_month]) map[r.cohort_month] = { size: r.cohort_size, p: {} };
+    map[r.cohort_month].p[r.period_number] = r.retention_rate_pct;
+  });
+
+  document.querySelector('#table-retention thead tr').innerHTML =
+    '<th>Cohort</th><th>Size</th>' + periods.map(p => `<th>M+${p}</th>`).join('');
+
+  document.querySelector('#table-retention tbody').innerHTML = cohorts.map(cohort => {
+    const d = map[cohort] || { size: 0, p: {} };
+    const cells = periods.map(p => {
+      const v = d.p[p];
+      if (v === undefined) return '<td style="color:#374151">—</td>';
+      const hue = Math.round(v * 1.2);
+      return `<td style="color:hsl(${hue},65%,62%)">${v}%</td>`;
+    }).join('');
+    return `<tr><td>${cohort}</td><td>${fmt(d.size)}</td>${cells}</tr>`;
+  }).join('');
 
   makeChart('chart-repeat', 'line',
     repeat.map(r => r.cohort_month),
@@ -332,8 +355,8 @@ async function loadDemand() {
     cats.map((cat, i) => ({
       label: cat,
       data: months.map(m => { const row = byCategory.find(r => r.month === m && r.category_name === cat); return row ? row.units_sold : 0; }),
-      backgroundColor: COLORS[i % COLORS.length],
-      borderRadius: 2,
+      backgroundColor: CAT_COLORS[i % CAT_COLORS.length],
+      borderRadius: 0,
     })),
     { scales: { x: { stacked: true }, y: { stacked: true } } }
   );
