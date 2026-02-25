@@ -186,7 +186,7 @@
     </div>
     <div class="charts-grid two-col">
       <div class="chart-card">
-        <h3>Monthly Orders (count)</h3>
+        <h3>Monthly Orders</h3>
         <div class="chart-wrap"><canvas id="chart-monthly-orders"></canvas></div>
       </div>
       <div class="chart-card">
@@ -244,8 +244,7 @@
 
 <script>
 const API = '';
-const COLORS = ['#5470c6','#91cc75','#fac858','#ee6666','#73c0de','#3ba272','#fc8452','#9a60b4'];
-const CAT_COLORS = ['#5470c6','#91cc75','#fac858','#ee6666','#73c0de','#3ba272','#fc8452','#9a60b4'];
+const CAT_COLORS = ['#4c72b0','#dd8452','#55a868','#c44e52','#8172b3','#937860','#da8bc3','#8c8c8c'];
 
 function switchTab(name, btn) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -294,15 +293,15 @@ async function loadRevenue() {
 
   makeChart('chart-monthly-revenue', 'bar',
     monthly.map(r => r.month),
-    [{ data: monthly.map(r => r.total_revenue), backgroundColor: '#5470c6', borderRadius: 4 }]
+    [{ data: monthly.map(r => r.total_revenue), backgroundColor: '#4c72b0', borderRadius: 4 }]
   );
   makeChart('chart-monthly-orders', 'bar',
     monthly.map(r => r.month),
-    [{ data: monthly.map(r => r.order_count), backgroundColor: '#73c0de', borderRadius: 4 }]
+    [{ data: monthly.map(r => r.order_count), backgroundColor: '#4c72b0', borderRadius: 4 }]
   );
   makeChart('chart-conversion', 'bar',
     conversion.map(r => r.source),
-    [{ data: conversion.map(r => r.conversion_rate_pct), backgroundColor: COLORS, borderRadius: 4 }]
+    [{ data: conversion.map(r => r.conversion_rate_pct), backgroundColor: '#4c72b0', borderRadius: 4 }]
   );
 }
 
@@ -337,7 +336,7 @@ async function loadCohorts() {
 
   makeChart('chart-repeat', 'line',
     repeat.map(r => r.cohort_month),
-    [{ data: repeat.map(r => r.repeat_rate_pct), borderColor: '#9a60b4', backgroundColor: 'rgba(154,96,180,0.1)', fill: true, tension: 0.4, pointRadius: 3 }]
+    [{ data: repeat.map(r => r.repeat_rate_pct), borderColor: '#8172b3', backgroundColor: 'rgba(129,114,179,0.1)', fill: true, tension: 0.4, pointRadius: 3 }]
   );
 }
 
@@ -350,7 +349,7 @@ async function loadDemand() {
 
   makeChart('chart-growth', 'bar',
     growth.map(r => r.month),
-    [{ data: growth.map(r => r.growth_rate_pct), backgroundColor: growth.map(r => r.growth_rate_pct >= 0 ? '#3ba272' : '#ee6666'), borderRadius: 4 }]
+    [{ data: growth.map(r => r.growth_rate_pct), backgroundColor: growth.map(r => r.growth_rate_pct >= 0 ? '#55a868' : '#c44e52'), borderRadius: 4 }]
   );
 
   document.querySelector('#table-top-products tbody').innerHTML = topProducts.map(r => `
