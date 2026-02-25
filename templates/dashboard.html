@@ -143,6 +143,8 @@
 
     .loading { color: #4b5563; font-size: 0.875rem; padding: 2rem; text-align: center; }
 
+    .chart-note { font-size: 0.65rem; color: #4b5563; margin-top: -0.6rem; margin-bottom: 0.85rem; line-height: 1.4; }
+
     #table-retention { min-width: 500px; font-size: 0.72rem; }
     #table-retention th, #table-retention td { padding: 0.3rem 0.5rem; }
 
@@ -178,17 +180,17 @@
     </div>
     <div class="charts-grid">
       <div class="chart-card">
-        <h3>Monthly Revenue</h3>
+        <h3>Monthly Revenue (€)</h3>
         <div class="chart-wrap"><canvas id="chart-monthly-revenue"></canvas></div>
       </div>
     </div>
     <div class="charts-grid two-col">
       <div class="chart-card">
-        <h3>Monthly Orders</h3>
+        <h3>Monthly Orders (count)</h3>
         <div class="chart-wrap"><canvas id="chart-monthly-orders"></canvas></div>
       </div>
       <div class="chart-card">
-        <h3>Conversion Rate by Source</h3>
+        <h3>Conversion Rate by Source (%)</h3>
         <div class="chart-wrap"><canvas id="chart-conversion"></canvas></div>
       </div>
     </div>
@@ -197,12 +199,14 @@
   <div id="tab-cohorts" class="tab-content">
     <div class="charts-grid">
       <div class="chart-card">
-        <h3>Repeat Purchase Rate by Cohort Month</h3>
+        <h3>Repeat Purchase Rate (%)</h3>
+        <p class="chart-note">Share of customers who made at least one additional purchase, by acquisition month</p>
         <div class="chart-wrap"><canvas id="chart-repeat"></canvas></div>
       </div>
     </div>
     <div class="chart-card">
-      <h3>Cohort Retention Table</h3>
+      <h3>Customer Retention by Cohort</h3>
+      <p class="chart-note">% of buyers from each month who returned to purchase again — columns show how many months after their first order</p>
       <div class="table-wrap">
         <table id="table-retention">
           <thead><tr></tr></thead>
@@ -240,8 +244,8 @@
 
 <script>
 const API = '';
-const COLORS = ['#6366f1','#22d3ee','#4ade80','#f59e0b','#f43f5e','#a78bfa','#34d399','#fb923c'];
-const CAT_COLORS = ['#818cf8','#38bdf8','#34d399','#fb923c','#f472b6','#a78bfa','#22d3ee','#86efac'];
+const COLORS = ['#5470c6','#91cc75','#fac858','#ee6666','#73c0de','#3ba272','#fc8452','#9a60b4'];
+const CAT_COLORS = ['#5470c6','#91cc75','#fac858','#ee6666','#73c0de','#3ba272','#fc8452','#9a60b4'];
 
 function switchTab(name, btn) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -255,19 +259,23 @@ function fmtEur(n) { return '€' + fmt(n); }
 
 function makeChart(id, type, labels, datasets, extra = {}) {
   const ctx = document.getElementById(id).getContext('2d');
+  const { plugins: extraPlugins = {}, scales: extraScales = {}, ...restExtra } = extra;
   return new Chart(ctx, {
     type,
     data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#9ca3af', font: { size: 10 }, boxWidth: 12 } } },
+      plugins: {
+        legend: { display: false },
+        ...extraPlugins
+      },
       scales: type !== 'pie' && type !== 'doughnut' ? {
         x: { ticks: { color: '#6b7280', maxRotation: 45, font: { size: 9 } }, grid: { color: '#1e2130' } },
         y: { ticks: { color: '#6b7280', font: { size: 9 } }, grid: { color: '#1e2130' } },
-        ...extra.scales
+        ...extraScales
       } : {},
-      ...extra
+      ...restExtra
     }
   });
 }
@@ -286,16 +294,15 @@ async function loadRevenue() {
 
   makeChart('chart-monthly-revenue', 'bar',
     monthly.map(r => r.month),
-    [{ label: 'Revenue (€)', data: monthly.map(r => r.total_revenue), backgroundColor: '#6366f1', borderRadius: 4 }]
+    [{ data: monthly.map(r => r.total_revenue), backgroundColor: '#5470c6', borderRadius: 4 }]
   );
   makeChart('chart-monthly-orders', 'bar',
     monthly.map(r => r.month),
-    [{ label: 'Orders', data: monthly.map(r => r.order_count), backgroundColor: '#22d3ee', borderRadius: 4 }]
+    [{ data: monthly.map(r => r.order_count), backgroundColor: '#73c0de', borderRadius: 4 }]
   );
   makeChart('chart-conversion', 'bar',
     conversion.map(r => r.source),
-    [{ label: 'Conversion Rate (%)', data: conversion.map(r => r.conversion_rate_pct), backgroundColor: COLORS, borderRadius: 4 }],
-    { plugins: { legend: { display: false } } }
+    [{ data: conversion.map(r => r.conversion_rate_pct), backgroundColor: COLORS, borderRadius: 4 }]
   );
 }
 
@@ -306,7 +313,8 @@ async function loadCohorts() {
   ]);
 
   const cohorts = [...new Set(retention.map(r => r.cohort_month))].sort();
-  const periods = [...new Set(retention.map(r => r.period_number))].sort((a, b) => a - b).slice(0, 13);
+  const periods = [...new Set(retention.map(r => r.period_number))]
+    .filter(p => p > 0).sort((a, b) => a - b).slice(0, 12);
   const map = {};
   retention.forEach(r => {
     if (!map[r.cohort_month]) map[r.cohort_month] = { size: r.cohort_size, p: {} };
@@ -314,22 +322,22 @@ async function loadCohorts() {
   });
 
   document.querySelector('#table-retention thead tr').innerHTML =
-    '<th>Cohort</th><th>Size</th>' + periods.map(p => `<th>M+${p}</th>`).join('');
+    '<th>Acquisition month</th><th>Buyers</th>' + periods.map(p => `<th>+${p}m</th>`).join('');
 
   document.querySelector('#table-retention tbody').innerHTML = cohorts.map(cohort => {
     const d = map[cohort] || { size: 0, p: {} };
     const cells = periods.map(p => {
       const v = d.p[p];
       if (v === undefined) return '<td style="color:#374151">—</td>';
-      const hue = Math.round(v * 1.2);
-      return `<td style="color:hsl(${hue},65%,62%)">${v}%</td>`;
+      const hue = Math.min(Math.round(v * 2.4), 120);
+      return `<td style="color:hsl(${hue},60%,60%)">${v}%</td>`;
     }).join('');
     return `<tr><td>${cohort}</td><td>${fmt(d.size)}</td>${cells}</tr>`;
   }).join('');
 
   makeChart('chart-repeat', 'line',
     repeat.map(r => r.cohort_month),
-    [{ label: 'Repeat Purchase Rate (%)', data: repeat.map(r => r.repeat_rate_pct), borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.1)', fill: true, tension: 0.4, pointRadius: 3 }]
+    [{ data: repeat.map(r => r.repeat_rate_pct), borderColor: '#9a60b4', backgroundColor: 'rgba(154,96,180,0.1)', fill: true, tension: 0.4, pointRadius: 3 }]
   );
 }
 
@@ -342,7 +350,7 @@ async function loadDemand() {
 
   makeChart('chart-growth', 'bar',
     growth.map(r => r.month),
-    [{ label: 'Growth Rate (%)', data: growth.map(r => r.growth_rate_pct), backgroundColor: growth.map(r => r.growth_rate_pct >= 0 ? '#4ade80' : '#f43f5e'), borderRadius: 4 }]
+    [{ data: growth.map(r => r.growth_rate_pct), backgroundColor: growth.map(r => r.growth_rate_pct >= 0 ? '#3ba272' : '#ee6666'), borderRadius: 4 }]
   );
 
   document.querySelector('#table-top-products tbody').innerHTML = topProducts.map(r => `
@@ -358,7 +366,10 @@ async function loadDemand() {
       backgroundColor: CAT_COLORS[i % CAT_COLORS.length],
       borderRadius: 0,
     })),
-    { scales: { x: { stacked: true }, y: { stacked: true } } }
+    {
+      plugins: { legend: { display: true, labels: { color: '#9ca3af', font: { size: 9 }, boxWidth: 8, padding: 6 } } },
+      scales: { x: { stacked: true }, y: { stacked: true } }
+    }
   );
 }
 
