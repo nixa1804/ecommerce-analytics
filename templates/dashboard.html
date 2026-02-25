@@ -297,11 +297,11 @@ async function loadRevenue() {
   );
   makeChart('chart-monthly-orders', 'bar',
     monthly.map(r => r.month),
-    [{ data: monthly.map(r => r.order_count), backgroundColor: '#4c72b0', borderRadius: 4 }]
+    [{ data: monthly.map(r => r.order_count), backgroundColor: '#55a868', borderRadius: 4 }]
   );
   makeChart('chart-conversion', 'bar',
     conversion.map(r => r.source),
-    [{ data: conversion.map(r => r.conversion_rate_pct), backgroundColor: '#4c72b0', borderRadius: 4 }]
+    [{ data: conversion.map(r => r.conversion_rate_pct), backgroundColor: CAT_COLORS, borderRadius: 4 }]
   );
 }
 
